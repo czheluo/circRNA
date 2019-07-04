@@ -15,9 +15,11 @@ GetOptions(
 	"queue:s"=>\$queue,
 			) or &USAGE;
 &USAGE unless ($fout);
-$out=ABSOLUTE_DIR("$fout/04.count");
+$fout=ABSOLUTE_DIR($fout);
+$out="$fout/04.count";
 mkdir $out if (!-d $out);
-$fin =ABSOLUTE_DIR("$fout/03.step3/step3.list");
+$out=ABSOLUTE_DIR($out);
+$fin ="$fout/03.step3/step3.list";
 $ref=ABSOLUTE_DIR($ref);
 $step||=1;
 $stop||=-1;
@@ -31,8 +33,8 @@ if ($step == 1) {
 		my ($id,$cri)=split/\s+/,$_;
 		print SH "$cri ";
 	}
-	print SH " && awk '{if(NR==1){print "CIRI_ID\t"$0}else{print "CIRI_circ_"(NR-1)"\t"$0}}'  circRNA.count.xls | cut -f 1,3- | sed 's/_count//g' > new.circRNA.count.xls ";
-	print SH " && cut -f1 new.circRNA.count.xls |awk -F'\t' -vOFS='\t' '{if(NR==1){print $0"\tCIRC_ID"}else{print $1,"CIRI_circ_"NR-1}}' >old2newID.xls"
+	print SH " && awk \'{if(NR==1){print \"CIRI_ID\t\"\$0}else{print \"CIRI_circ_\"(NR-1)\"\t\"\$0}}\'  circRNA.count.xls | cut -f 1,3- | sed \'s/_count//g\' > new.circRNA.count.xls ";
+	print SH " && cut -f1 new.circRNA.count.xls |awk \-F\'\t\' -vOFS=\'\t\' \'{if(NR==1){print \$0\"\tCIRC_ID\"}else{print \$1,\"CIRI_circ_\"NR-1}}\' >old2newID.xls"
 	close In;
 	close SH;
 	my $job="qsub-slurm.pl  --Queue $queue --Resource mem=30G --CPU 3 $wsh/step3.sh";
@@ -45,7 +47,7 @@ if ($step == 2) {
 	while (In) {
 		chomp;
 		my ($id,$cri)=split/\s+/,$_,2;
-		print SH "mkdir -p $out/$id && cd $out/$id && perl $Bin/bin/tabletools_add.pl  $out/old2newID.xls -t $cri -n 1 |awk -F'\t' -vOFS='\t' '{print $13,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' >$out/$id.sample.ciri.xls \n";
+		print SH "mkdir -p $out/$id && cd $out/$id && perl $Bin/bin/tabletools_add.pl  $out/old2newID.xls -t $cri -n 1 |awk -F\'\t\' -vOFS=\'\t\' \'{print \$13,\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\$11,\$12}\' >\$out/\$id.sample.ciri.xls \n";
 	}
 	close In;
 	my $job="qsub-slurm.pl  --Queue $queue --Resource mem=10G $wsh/sampleid.sh";
