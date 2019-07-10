@@ -3,7 +3,7 @@ use strict;
 use warnings;
 my $BEGIN_TIME=time();
 use Getopt::Long;
-my ($fin,$fout,$ref,$wsh,$queue,$strand);
+my ($fin,$fout,$method,$wsh,$queue,$rep,$qvalue);
 use Data::Dumper;
 use FindBin qw($Bin $Script);
 use File::Basename qw(basename dirname);
@@ -12,21 +12,38 @@ GetOptions(
 	"help|?" =>\&USAGE,
 	"out:s"=>\$fout,
 	"wsh:s"=>\$wsh,
+	"rep:s"=>\$rep,
+	"method:s"=>\$method,
+	"qvalue:s"=>\$qvalue,
 	"queue:s"=>\$queue,
 			) or &USAGE;
 &USAGE unless ($fout);
-my $diflnc =ABSOLUTE_DIR("$fout/05.diffexp_circ");
-mkdir $diflnc  if (!-d $diflnc);
+$qvalue||=0.005;
+$method||="edgr";
+$rep||="yes";
 mkdir $fout if (!-d $fout);
 mkdir $wsh if (!-d $wsh);
 $fout=ABSOLUTE_DIR($fout);
 $wsh=ABSOLUTE_DIR($wsh);
-open out,">$wsh/05.circ_diffexp.sh";
-my $tool="/mnt/ilustre/users/bingxu.liu/workspace/RNA_Pipeline/RNAseq_ToolBox_v1410";
-print out "cp $fout/04.count/{cirRNA.srpnm.xls,new.circRNA.count.xls} $diflnc && cd $diflnc && $tool edgeR -groupfile $fout/group.list -count new.circRNA.count.xls -fpkm cirRNA.srpnm.xls";
-close out;
-my $job="qsub-slurm.pl  --Queue $queue --Resource mem=10G --CPU 4 $wsh/05.circ_diffexp.sh";
-`$job`;
+my $difc ="$fout/05.diffexp_circ";
+mkdir $difc  if (!-d $difc);
+open Out,">$wsh/05.circ_diffexp.sh";
+if ($method eq "edgr") {
+	my $tool="/mnt/ilustre/users/bingxu.liu/workspace/RNA_Pipeline/RNAseq_ToolBox_v1410";
+	print Out "cp $fout/04.count/{cirRNA.srpnm.xls,new.circRNA.count.xls} $difc && cd $difc && $tool edgeR -groupfile $fout/group.list -count new.circRNA.count.xls -fpkm cirRNA.srpnm.xls \n";
+	close Out;
+}elsif ($method eq "DESeq" && $rep eq "no") {
+	my $Degseq="/mnt/ilustre/users//yuntao.guo/research/dif_exp/DESeq/run_DEGseq_DE.pl";
+	print Out "cp $fout/04.count/{cirRNA.srpnm.xls,new.circRNA.count.xls} $difc && cd $difc && perl $Degseq -fpkm cirRNA.srpnm.xls -count new.circRNA.count.xls -qvalue $qvalue \n";
+	close Out;
+}elsif ($method eq "DESeq" && $rep eq "yes") {
+	my $Degseq="/mnt/ilustre/users//yuntao.guo/research/dif_exp/DESeq/run_DEGseq_for_rep_DE.pl";
+	print Out "cp $fout/04.count/{cirRNA.srpnm.xls,new.circRNA.count.xls} $difc && cd $difc && perl $Degseq -group $fout/group.list -tpm cirRNA.srpnm.xls -count new.circRNA.count.xls -qvalue $qvalue \n";
+	close Out;
+}
+
+#my $job="qsub-slurm.pl  --Queue $queue --Resource mem=10G --CPU 4 $wsh/05.circ_diffexp.sh";
+#`$job`;
 
 #######################################################################################
 print STDOUT "\nDone. Total elapsed time : ",time()-$BEGIN_TIME,"s\n";
@@ -61,12 +78,11 @@ Description:
 
 Usage:
   Options:
-	"help|?" =>\&USAGE,
-	"fqlist:s"=>\$fin,
 	"out:s"=>\$fout,
-	"ref:s"=>\$ref,
 	"wsh:s"=>\$wsh,
-	"strand:s"=>\$strand,
+	"rep:s"=>\$rep,
+	"method:s"=>\$method, 
+	"qvalue:s"=>\$qvalue,
 	"queue:s"=>\$queue,
 	-h         Help
 

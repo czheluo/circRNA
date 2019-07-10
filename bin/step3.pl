@@ -3,41 +3,42 @@ use strict;
 use warnings;
 my $BEGIN_TIME=time();
 use Getopt::Long;
-my ($fin,$fout,$ref,$queue,$wsh);
+my ($fin,$fout,$queue,$wsh);
 use Data::Dumper;
 use FindBin qw($Bin $Script);
 use File::Basename qw(basename dirname);
 my $version="1.0.0";
 GetOptions(
 	"help|?" =>\&USAGE,
-	"int:s"=>\$fin,
-	"ref:s"=>\$ref,
+	"list:s"=>\$fin,
 	"out:s"=>\$fout,
 	"wsh:s"=>\$wsh,
-	"queue:s"=>$queue,
+	"queue:s"=>\$queue,
 			) or &USAGE;
 &USAGE unless ($fout);
+$queue||="DNA";
 $fout=ABSOLUTE_DIR($fout);
-my $out=ABSOLUTE_DIR("$fout/03.step3");
+my $out="$fout/03.CIRI";
 mkdir $out if (!-d $out);
-$ref=ABSOLUTE_DIR($ref);
-$fin=ABSOLUTE_DIR("$fout/02.step2/step2.list");
+mkdir $wsh if (!-d $wsh);
+$wsh=ABSOLUTE_DIR($wsh);
+$fin="$fout/02.step2/step2.list";
 open In,$fin;
 open SH,">$wsh/step3.sh";
-open LS,">$out/step3.list"
+open LS,">$out/step3.list";
 while (<In>) {
 	chomp;
 	my ($id,$sam)=split/\s+/,$_;
 	#my $ciri="/mnt/ilustre/centos7users/meng.luo/Pipeline/RNA/bin/CIRI2.pl";
 	my $ciri="/mnt/ilustre/users/rna/newmdt/software/01.bin/CIRI_v2.0.6/CIRI2.pl";
-	print SH "mkdir -p $out/$id && cd $out/$id && perl $ciri -I $sam -O $out/$id.ciri -F $ref/ref.fa -A $ref/ref_genome.gtf\n";
-	print LS "$id\t$out/$id.ciri\n";
+	print SH "mkdir -p $out/$id && cd $out/$id && perl $ciri -I $sam -O $out/$id/$id.ciri -F $fout/01.ref/ref.fa -A $fout/01.ref/ref_genome.gtf\n";
+	print LS "$id\t$out/$id/$id.ciri\n";
 }
 close In;
 close SH;
 close LS;
-my $job="qsub-slurm.pl  --Queue $queue --Resource mem=30G --CPU 3 $wsh/step3.sh";
-`$job`;
+#my $job="qsub-slurm.pl  --Queue $queue --Resource mem=30G --CPU 3 $wsh/step3.sh";
+#`$job`;
 
 #######################################################################################
 print STDOUT "\nDone. Total elapsed time : ",time()-$BEGIN_TIME,"s\n";
@@ -67,15 +68,12 @@ Contact:        meng.luo\@majorbio.com;
 Script:			$Script
 Description:
 
-	eg: perl -int 
+	eg: perl $Script -out ./ -wsh work_sh/
 Usage:
   Options:
-	"help|?" =>\&USAGE,
-	"fqlist:s"=>\$fin,
+	"list:s"=>\$fin,
 	"out:s"=>\$fout,
-	"ref:s"=>\$ref,
 	"wsh:s"=>\$wsh,
-	"strand:s"=>\$strand,
 	"queue:s"=>\$queue,
 	-h         Help
 
