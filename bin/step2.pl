@@ -3,7 +3,7 @@ use strict;
 use warnings;
 my $BEGIN_TIME=time();
 use Getopt::Long;
-my ($fin,$fout,$ref,$queue,$wsh);
+my ($fin,$fout,$queue,$wsh);
 use Data::Dumper;
 use FindBin qw($Bin $Script);
 use File::Basename qw(basename dirname);
@@ -11,30 +11,32 @@ my $version="1.0.0";
 GetOptions(
 	"help|?" =>\&USAGE,
 	"fq:s"=>\$fin,
-	"ref:s"=>\$ref,
 	"out:s"=>\$fout,
 	"wsh:s"=>\$wsh,
-	"queue:s"=>$queue,
+	"queue:s"=>\$queue,
 			) or &USAGE;
 &USAGE unless ($fout);
-$fout=ABSOLUTE_DIR($fout);
+$fin=ABSOLUTE_DIR($fin);
+$queue||="DNA";
 mkdir $fout if (!-d $fout);
-my $out=ABSOLUTE_DIR("$fout/02.step2");
+$fout=ABSOLUTE_DIR($fout);
+mkdir $wsh if (!-d $wsh);
+$wsh=ABSOLUTE_DIR($wsh);
+my $out="$fout/02.bwa";
 mkdir $out if (!-d $out);
-#$fin=ABSOLUTE_DIR("$fout/../01.hisat-mapping/hisat.list");
 open In,$fin;
 open SH,">$wsh/step2.sh";
 open LS,">$out/step2.list";
 while (<In>) {
 	chomp;
-	my ($id,undef,$fq1,$fq2)=split/\s+/,$_;
-	print SH "mkdir --p $out/$id && cd $out/$id && bwa mem -T 19 $fout/01.step1/ $fq1 $fq2 1\>$out/$id/aln-pe.sam 2\>$out/$id/aln-pe.log\n";
+	my ($id,$fq1,$fq2)=split/\s+/,$_;
+	print SH "mkdir --p $out/$id && cd $out/$id && bwa mem -T 19 $fout/01.ref/ref.fa $fq1 $fq2 1\>$out/$id/aln-pe.sam 2\>$out/$id/aln-pe.log\n";
 	print LS "$id\t$out/$id/aln-pe.sam\n";
 }
 close In;
 close SH;
 close LS;
-my $job="qsub-slurm.pl  --Queue $queue --Resource mem=100G --CPU 19 $wsh/step2.sh";
+my $job="qsub-slurm.pl  --Queue $queue --Resource mem=60G --CPU 19 $wsh/step2.sh";
 `$job`;
 #######################################################################################
 print STDOUT "\nDone. Total elapsed time : ",time()-$BEGIN_TIME,"s\n";
@@ -67,12 +69,9 @@ Description:
 
 Usage:
   Options:
-	"help|?" =>\&USAGE,
-	"fqlist:s"=>\$fin,
+	"fq:s"=>\$fin,
 	"out:s"=>\$fout,
-	"ref:s"=>\$ref,
 	"wsh:s"=>\$wsh,
-	"strand:s"=>\$strand,
 	"queue:s"=>\$queue,
 	-h         Help
 
