@@ -185,7 +185,6 @@ if ($step == 11) {
 	print Log "########################################\n";
 	$step++ if ($step ne $stop);
 }
-
 close Log;
 #######################################################################################
 print STDOUT "\nDone. Total elapsed time : ",time()-$BEGIN_TIME,"s\n";
